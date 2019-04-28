@@ -63,6 +63,9 @@ lazy val protobuflib = (project in file("protobuflib"))
 
 // Project that implements the Calculator gRPC service
 lazy val service = (project in file("service"))
+  .settings(
+    libraryDependencies += scalatest
+  )
   .dependsOn(protobuflib)
 
 // Project containing client programs for invoking AWS Lambda functions using gRPC, and also the "main" client program
