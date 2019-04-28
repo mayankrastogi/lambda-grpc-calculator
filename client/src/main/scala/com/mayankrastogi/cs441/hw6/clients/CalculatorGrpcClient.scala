@@ -25,6 +25,7 @@ class CalculatorGrpcClient(private var url: String) extends CalculatorClient wit
         "Content-Type" -> "application/grpc+proto",
         "Accept" -> "application/grpc+proto"
       ))
+      .timeout(connTimeoutMs = 2000, readTimeoutMs = 10000) // So that request doesn't time out for Lambda cold starts
       .postData(expression.toByteArray)
 
     logger.debug(s"Making HTTP request: $request")
