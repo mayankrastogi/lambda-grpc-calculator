@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ScalaSbtSettings">
+    <option name="linkedExternalProjectsSettings">
+      <SbtProjectSettings>
+        <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="modules">
+          <set>
+            <option value="$PROJECT_DIR$" />
+            <option value="$PROJECT_DIR$/client" />
+            <option value="$PROJECT_DIR$/lambda-grpc" />
+            <option value="$PROJECT_DIR$/lambda-rest" />
+            <option value="$PROJECT_DIR$/project" />
+            <option value="$PROJECT_DIR$/protobuflib" />
+            <option value="$PROJECT_DIR$/service" />
+          </set>
+        </option>
+        <option name="sbtVersion" value="1.2.8" />
+        <option name="useAutoImport" value="true" />
+      </SbtProjectSettings>
+    </option>
+  </component>
+</project>

@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+option java_package = "com.mayankrastogi.cs441.hw6.protobuf";
+
+service Calculator {
+    rpc Evaluate(Expression) returns (Response);
+}
+
+enum Operations {
+    ADD = 0;
+    SUBTRACT = 1;
+    MULTIPLY = 2;
+    DIVIDE = 3;
+}
+
+message Operands {
+    double number1 = 1;
+    double number2 = 2;
+}
+
+message Expression {
+    Operations operation = 1;
+    Operands operands = 2;
+}
+
+message Response {
+    Expression expression = 1;
+    double result = 2;
+}

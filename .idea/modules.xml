@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/client.iml" filepath="$PROJECT_DIR$/.idea/modules/client.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/lambdaGrpc.iml" filepath="$PROJECT_DIR$/.idea/modules/lambdaGrpc.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/lambdaRest.iml" filepath="$PROJECT_DIR$/.idea/modules/lambdaRest.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/mayank_k_rastogi_hw6.iml" filepath="$PROJECT_DIR$/.idea/modules/mayank_k_rastogi_hw6.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/mayank_k_rastogi_hw6-build.iml" filepath="$PROJECT_DIR$/.idea/modules/mayank_k_rastogi_hw6-build.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/protobuflib.iml" filepath="$PROJECT_DIR$/.idea/modules/protobuflib.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/service.iml" filepath="$PROJECT_DIR$/.idea/modules/service.iml" />
+    </modules>
+  </component>
+</project>
