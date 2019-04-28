@@ -1,67 +1,265 @@
-# Homework 6
-### Description: you will gain experience with using gRPC and using REST requests to invoke lambda functions that you will deploy on AWS.
-### Mandatory for graduate students only. Submissions from undergrad students will not be graded, but well-done homework will be **considered** when assigning the final grade.
-### Grade: 5% + bonus up to 3% for using only Scala and SBT to create a single SBT project that contains a protobuf library project and its dependent project that uses the protobufs to make gRPC calls to a lambda function.
-#### You can obtain this Git repo using the command ```git clone git@bitbucket.org:cs441_spring2019/homework6.git```. You cannot push your code into this repo, otherwise, your grade for this homework will be ZERO!
+## CS 441 - Engineering Distributed Objects for Cloud Computing
+## Homework 6 - Lambda gRPC Calculator
 
-## Preliminaries - skip those if you already read them in the previous homework descriptions.
-If you have not already done so as part of your previous homeworks, you must create your account at [BitBucket](https://bitbucket.org/), a Git repo management system. It is imperative that you use your UIC email account that has the extension @uic.edu. Once you create an account with your UIC address, BibBucket will assign you an academic status that allows you to create private repos. Bitbucket users with free accounts cannot create private repos, which are essential for submitting your homeworks and the course project. Your instructor created a team for this class named [cs441_Spring2019](https://bitbucket.org/cs441_spring2019/). Please contact your TA [Shen Wang](swang224@uic.edu) from your **UIC.EDU** account and they will add you to the team repo as developers, since they already have the admin privileges. Please use your emails from the class registration roster to add you to the team and you will receive an invitation from BitBucket to join the team. Since it is still a large class, please use your UIC email address for communications or Piazza and avoid emails from other accounts like funnybunny1992@gmail.com. If you don't receive a response within 12 hours, please contact us via Piazza, it may be a case that your direct emails went to the spam folder.
+---
 
-In case you have not done so, you will install [IntelliJ](https://www.jetbrains.com/student/) with your academic license, the JDK, the Scala runtime and the IntelliJ Scala plugin, the [Simple Build Toolkit (SBT)](https://www.scala-sbt.org/1.x/docs/index.html) and make sure that you can create, compile, and run Java and Scala programs. Please make sure that you can run [Java monitoring tools](https://docs.oracle.com/javase/8/docs/technotes/guides/troubleshoot/tooldescr025.html) or you can choose a newer JDK and tools if you want to use a more recent one.
+### Overview
 
-Please set up your account with [AWS Educate](https://aws.amazon.com/education/awseducate/). Using your UIC email address will enable you to receive free credits for running your jobs in the cloud.
-
-You will use logging and configuration management frameworks. You will comment your code extensively and supply logging statements at different logging levels (e.g., TRACE, INFO, ERROR) to record information at some salient points in the executions of your programs. All input and configuration variables must be supplied through configuration files -- hardcoding these values in the source code is prohibited and will be punished by taking a large percentage of points from your total grade! You are expected to use [Logback](https://logback.qos.ch/) and [SLFL4J](https://www.slf4j.org/) for logging and [Typesafe Conguration Library](https://github.com/lightbend/config) for managing configuration files. These and other libraries should be exported into your project using your script [build.sbt](https://www.scala-sbt.org/1.0/docs/Basic-Def-Examples.html). These libraries and frameworks are widely used in the industry, so learning them is the time well spent to improve your resume.
-
-As before, when writing your program code in Scala, you should avoid using **var**s and while/for loops that iterate over collections using [induction variables](https://en.wikipedia.org/wiki/Induction_variable). Instead, you should learn to use collection methods **map**, **flatMap**, **foreach**, **filter** and many others with lambda functions, which make your code linear and easy to understand. Also, avoid mutable variables at all cost. Points will be deducted for having many **var**s and inductive variable loops without explanation why mutation is needed in your code - you can always do without it.
-
-## Overview
-In this homework, you will create and deploy your lambda functions on [AWS Lambda](https://aws.amazon.com/lambda/) and you will write a client program to invoke these lambda functions using [gRPC](https://grpc.io/) and independently a different client program to invoke the same lambda functions by using the [AWS API Gateway](https://aws.amazon.com/api-gateway/) with the requests GET and POST and DELETE.
-
-Doing this homework enables students to put their theoretical knowledge about gRPC and REST architectural style on a firm footing in the context of creating and using lambda functions deployed in the cloud.
+The objective of this homework was to create a gRPC service for performing basic arithmetic operations and deploying it on AWS Lambda.
 
 
-## Functionality
-Your homework assignment consists of two interlocked parts: first, create a client program that uses gRPC to invoke a lambda calculator function deployed on AWS and second, to create a client program and the corresponding lambda function calculator(s) that use the REST methods (e.g., GET or POST) to interact. While you are free to determine how your lambda calculator works, there is a small subset of mandatory functionality that you must implement: the basic arithmetic functions +, -, /, and * and the extended functions Memory with the commands set and retrieve for storing and retrieving the last computed value.
+### API Gateway URLs
 
-The starting point is to follow the guide on [AWS Serverless Application Model (SAM)](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-quick-start.html). Once you follow the steps of the tutorial, you will be able to invoke a lambda function via the AWS API Gateway.
+The API is deployed using AWS API Gateway at [https://t2s54aygxk.execute-api.us-east-2.amazonaws.com/prod/calculator](https://t2s54aygxk.execute-api.us-east-2.amazonaws.com/prod). It contains two resources:
 
-Next, you will learn how to create a [gRPC](https://grpc.io/) client program. I find this [tutorial on gRPC on HTTP/2](https://www.cncf.io/blog/2018/08/31/grpc-on-http-2-engineering-a-robust-high-performance-protocol/) very well written by Jean de Klerk, Developer Program Engineer at Google.
+1. [grpc](https://t2s54aygxk.execute-api.us-east-2.amazonaws.com/prod/calculator/grpc) - For performing calculations using the gRPC client via `POST` method
+2. [rest](https://t2s54aygxk.execute-api.us-east-2.amazonaws.com/prod/calculator/rest) - For performing calculations using the REST client via `POST` method
 
-After that you will learn about [AWS API Gateway](https://docs.aws.amazon.com/apigateway/latest/developerguide/welcome.html) and determine how to use it to create RESTful API for your implementation of the calculator lambda function.
+The REST API can also be used via a REST client, such as [Postman](https://www.getpostman.com/).
 
-A guide to keep you on the right path is the [blog entry](https://blog.coinbase.com/grpc-to-aws-lambda-is-it-possible-4b29a9171d7f) that describes the process of using gRPC for invoking AWS lambda function in Go.
+**Sample Payload**
 
-Excellent [guide how to create a REST service with AWS Lambda](https://blog.sourcerer.io/full-guide-to-developing-rest-apis-with-aws-api-gateway-and-aws-lambda-d254729d6992) includes instructions on how to set up and configure AWS Lambda.
+```json
+{
+  "operation": "ADD",
+  "operands": {
+    "number1": 4.5,
+    "number2": 2.5
+  }
+}
+```
 
-## Baseline Submission
-Your baseline project submission should include your implementation of lambda function calculators, a conceptual explanation in the document or in the comments in the source code of your design decisions, especially the state management part, and the documentation that describe the build and runtime process, to be considered for grading. Your project submission should include all your source code written in Scala as well as non-code artifacts (e.g., configuration files), your entire project should be buildable using the single build SBT.
+**Sample Request**
 
-## Piazza collaboration
-You can post questions and replies, statements, comments, discussion, etc. on Piazza. For this homework, feel free to share your ideas, mistakes, code fragments, commands from scripts, and some of your technical solutions with the rest of the class, and you can ask and advise others using Piazza on where resources and sample programs can be found on the internet, how to resolve dependencies and configuration issues. When posting question and answers on Piazza, please select the appropriate folder, i.e., hw6 to ensure that all discussion threads can be easily located. Active participants and problem solvers will receive bonuses from the big brother :-) who is watching your exchanges on Piazza (i.e., your class instructor). However, *you must not share your codebase or specific details related how your designed the state management part!*
+```
+curl -X POST \
+  https://t2s54aygxk.execute-api.us-east-2.amazonaws.com/prod/calculator/rest \
+  -H 'Accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{"operation":"ADD","operands":{"number1": 4.5,"number2": 2.5}}'
+```
 
-## Git logistics
-**This is an individual homework.** Separate repositories will be created for each of your homeworks and for the course project. You will find a corresponding entry for this homework at git@bitbucket.org:cs441_spring2019/homework6.git. You will fork this repository and your fork will be private, no one else besides you, the TA and your course instructor will have access to your fork. Please remember to grant a read access to your repository to your TA and your instructor. In future, for the team homeworks and the course project, you should grant the write access to your forkmates, but NOT for this homework. You can commit and push your code as many times as you want. Your code will not be visible and it should not be visible to other students (except for your forkmates for a team project, but not for this homework). When you push the code into the remote repo, your instructor and the TA will see your code in your separate private fork. Making your fork public, pushing your code into the main repo, or inviting other students to join your fork for an individual homework will result in losing your grade. For grading, only the latest push timed before the deadline will be considered. **If you push after the deadline, your grade for the homework will be zero**. For more information about using the Git and Bitbucket specifically, please use this [link as the starting point](https://confluence.atlassian.com/bitbucket/bitbucket-cloud-documentation-home-221448814.html). For those of you who struggle with the Git, I recommend a book by Ryan Hodson on Ry's Git Tutorial. The other book called Pro Git is written by Scott Chacon and Ben Straub and published by Apress and it is [freely available](https://git-scm.com/book/en/v2/). There are multiple videos on youtube that go into details of the Git organization and use.
+**Sample Response**
 
-Please follow this naming convention while submitting your work : "Firstname_Lastname_hw6" without quotes, where you specify your first and last names **exactly as you are registered with the University system**, so that we can easily recognize your submission. I repeat, make sure that you will give both your TA and the course instructor the read access to your *private forked repository*.
+```json
+{
+    "expression": {
+        "operation": "ADD",
+        "operands": {
+            "number1": 4.5,
+            "number2": 2.5
+        }
+    },
+    "result": 7.0
+}
+```
 
-## Discussions and submission
-You can post questions and replies, statements, comments, discussion, etc. on Piazza. Remember that you cannot share your code and your solutions privately, but you can ask and advise others using Piazza and StackOverflow or some other developer networks where resources and sample programs can be found on the Internet, how to resolve dependencies and configuration issues. Yet, your implementation should be your own and you cannot share it. Alternatively, you cannot copy and paste someone else's implementation and put your name on it. Your submissions will be checked for plagiarism. **Copying code from your classmates or from some sites on the Internet will result in severe academic penalties up to the termination of your enrollment in the University**. When posting question and answers on Piazza, please select the appropriate folder, i.e., hw1 to ensure that all discussion threads can be easily located.
+### Prerequisites to build and run the project
 
+- [SBT](https://www.scala-sbt.org/) installed on your system
+- [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-install.html) installed and configured on your system
 
-## Submission deadline and logistics
-Saturday, May 4 at 8PM CST via the bitbucket repository. Your submission will include the code for the protobuf and your client programs including the code generated with the compiler protoc, your documentation with instructions and detailed explanations on how to assemble and deploy your submission, and a document that explains how you designed and implemented the program, and what the limitations of your implementation are. Again, do not forget, please make sure that you will give both your TA and your instructor the read access to your private forked repository. Your name should be shown in your README.md file and other documents. Your code should compile and run from the command line using the commands ```sbt clean compile test``` and ```sbt clean compile run```. Also, you project should be IntelliJ friendly, i.e., your graders should be able to import your code into IntelliJ and run from there. Use .gitignore to exlude files that should not be pushed into the repo.
+### Project Structure
 
+This project uses SBT multi-project build system and consists of the following sub-projects:
 
-## Evaluation criteria
-- the maximum grade for this homework is 5% with the bonus up to 3% for using only Scala and SBT to create a single SBT project that contains a protobuf library project and its dependent project that uses the protobufs to make gRPC calls to a lambda function. Points are subtracted from this maximum grade: for example, saying that 2% is lost if some requirement is not completed means that the resulting grade will be 5%-2% => 3%; if the core homework functionality does not work, no bonus points will be given;
-- the code does not work in that it does not produce a correct output or crashes: up to 5% lost;
-- having less than two unit tests that test the main functionality: up to 4% lost;
-- missing comments and explanations from the program: up to 3% lost;
-- logging is not used in the program: up to 3% lost;
-- hardcoding the input values in the source code instead of using the suggested configuration libraries: up to 4% lost;
-- no instructions in README.md on how to install and run your program: up to 4% lost;
-- the documentation exists but it is insufficient to understand how you assembled and deployed all components of the cloud: up to 4% lost;
-- the minimum grade for this homework cannot be less than zero.
+1. **root:** The top-level project that aggregates all the other projects but does not contain any source files
+2. **protobuflib:** Contains the `calculator.proto` file which defines the calculator gRPC service 
+3. **service:** Holds the implementation of the calculator gRPC service. *Depends on `protobuflib`*
+4. **lambdaGrpc:** Project for AWS Lambda Function that uses Protobuf as the data-interchange format. *Depends on `service`*
+5. **lambdaRest:** Project for AWS Lambda Function that uses JSON as the data-interchange format. *Depends on `service`*
+6. **client:** Contains client programs for invoking AWS Lambda functions using gRPC, and also the **main** client program. *Depends on `protobuflib`*
 
-That's it, folks!
+#### The `protobuflib` project
+
+This project contains the `calculator.proto` file which defines the `Calculator` gRPC service, like so:
+
+```proto
+syntax = "proto3";
+
+service Calculator {
+    rpc Evaluate(Expression) returns (Response);
+}
+
+enum Operations {
+    ADD = 0;
+    SUBTRACT = 1;
+    MULTIPLY = 2;
+    DIVIDE = 3;
+}
+
+message Operands {
+    double number1 = 1;
+    double number2 = 2;
+}
+
+message Expression {
+    Operations operation = 1;
+    Operands operands = 2;
+}
+
+message Response {
+    Expression expression = 1;
+    double result = 2;
+}
+```
+
+The project uses [ScalaPB](https://scalapb.github.io/) to generate the stubs for the `Calculator` service and the related protobuf messages. These stubs are generated automatically when the this project or any of the dependent projects are compiled using `sbt <project-name>/compile`.
+
+#### The `service` project
+
+This project depends on the `protobuflib` project to provide the protobuf and gRPC service stubs. It contains the `CalculatorService` scala object which implements the `CalculatorGrpc.Calculator` gRPC service.
+
+#### The `lambdaGrpc` project
+
+This project contains the AWS Lambda function that responds to gRPC calls. It depends on the `service` project for providing the implementation of the calculator gRPC service.
+
+The input to the lambda function is an `APIGatewayProxyRequestEvent` object which must contain the **base-64** encoded string representation of the `Expression` protobuf in the `body` of the event. *The API Gateway must be configured to pass binary data in the request body as a base-64 encoded string to the lambda function* by configuring the **Binary Media Types** settings of the API to `application/grpc+proto`. The client should send `Content-Type: application/grpc+proto` header to tell the API Gateway to encode the binary *body* of the request to base-64 encoded string before passing it on to the lambda function.
+
+The output from the lambda function is an `APIGatewayProxyResponseEvent` object. It will contain the **base-64** encoded string reporesentation of the `Response` protobuf in the body of the event. The API Gateway must be configured to convert the base-64 encoded data in the response event's body to binary data while forwarding the response to the client. This is done by setting the **Content Handling** property of the **Integration Response** to `CONVERT_TO_BINARY`. Additionally, the client should send `Accept: application/grpc+proto` header to tell the API Gateway that it expects a response which is of binary type (as configured in *Binary Media Types*).
+
+The handler itself extracts the base-64 encoded request body from the proxy request event, decodes it to a byte-array and constructs the `Expression` object from it. This object is passed to the `CalculatorService` to evaluate the result. The `Response` object is then serialized to a byte-array, which is then base-64 encoded and passed into the body of the response proxy event object while setting the `isBase64Encoded` flag at the same time.
+
+For deploying this function to AWS Lambda, we just need to issue the command `sbt lambdaGrpc/assembly` to package it into a fat jar and upload it on AWS Lambda, selecting **Java 8** as the **runtime** and `com.mayankrastogi.cs441.hw6.lambda.CalculatorFunctionGrpc::handleRequest` as the **Handler**. 
+
+#### The `lambdaRest` project
+
+This project contains the AWS Lambda function that responds to REST calls. It depends on the `service` project for providing the implementation of the calculator gRPC service.
+
+The input to the lambda function is a `java.util.Map<String, Object>` object which is deserialized from a JSON representation of the `Expression` protobuf. The deserialization is done by AWS Lambda before invoking the handler.
+
+The output is a `java.util.Map<String, Object>` object that mimics keys and values of the `Response` protobuf. AWS lambda serializes it into JSON after receiving the response from the handler.
+
+The handler converts the input map object back to a JSON string using `Gson` and constructs the `Expression` object from it using ScalaPB's `JsonFormat`. The expression is then passed to the `CalculatorService` to evaluate the result. The `Response` object is then serialized to a JSON string using `JsonFormat`, which is then converted to a `java.util.Map<String, Object>` object using `Gson`. The `operation` key is added to this map since `JsonFormat` skips serializing `enum`s. Additionally, `JsonFormat` skips adding the `result` key if it is `0`, so we add it back to the map if it's missing.
+
+For deploying this function to AWS Lambda, we just need to issue the command `sbt lambdaRest/assembly` to package it into a fat jar and upload it on AWS Lambda, selecting **Java 8** as the **runtime** and `com.mayankrastogi.cs441.hw6.lambda.CalculatorFunctionRest::handleRequest` as the **Handler**. 
+
+#### The `client` project
+
+This project contains a scala trait `CalculatorClient` which defines the contract for writing a client for invoking the Lambda functions via API Gateway. `CalculatorGrpcClient` and `CalculatorRestClient` are two implementations of this trait that invoke `CalculatorFunctionGrpc` and `CalculatorFunctionRest` respectively, once they are deployed on AWS using API Gateway.
+
+The `Calculator` scala object is a Scala `App` that provides a user interface for performing calculations using either of the two clients. It takes in two parameters:
+
+1. **API Type:** Can be either `grpc` or `rest` to specify which client to use
+2. **API Gateway URL:** The URL of the API Gateway that invokes the lambda function for the specified API Type.
+
+If these arguments are not specified, default values will be picked up from the typesafe config file `reference.conf`.
+
+**Example usage**
+
+```
+sbt "client/run grpc"
+```
+
+**Example Output**
+
+```text
+
+=============================================================================================================
+Calculator GRPC client
+=============================================================================================================
+
+Choose operation:
+
+1 - Add
+2 - Subtract
+3 - Multiply
+4 - Divide
+0 - Quit
+      
+1
+Enter first number: 3
+Enter second number: 2
+
+Result = 5.0
+
+=============================================================================================================
+Calculator GRPC client
+=============================================================================================================
+
+Choose operation:
+
+1 - Add
+2 - Subtract
+3 - Multiply
+4 - Divide
+0 - Quit
+      
+0
+
+Process finished with exit code 0
+```
+
+### Deploying the serverless functions on AWS Lambda
+
+Follow the below instructions to deploy the lambda functions on AWS. The instructions below are for the **gRPC** lambda function. For deploying the **REST** lambda function, replace `Grpc` with `Rest` in the commands/names.
+
+1. Create a fat jar of the function using `sbt assembly`
+
+    ```
+    sbt lambdaGrpc/assembly
+    ```
+
+2. Log in to your [AWS Console](https://aws.amazon.com)
+3. From **Services**, search for **Lambda** and select it
+4. Select **Create function**
+5. In the next screen, select **Author from scratch**, and under the basic information section, specify the following and click **Create function**:
+    - Function name: `CalculatorGrpc`
+    - Runtime: `Java 8`
+6. Under the **Function code** section, specify the following and click on **Save**:
+    - Code entry type: `Upload a .zip or .jar file`
+    - Runtime: `Java 8`
+    - Handler: `com.mayankrastogi.cs441.hw6.lambda.CalculatorFunctionGrpc::handleRequest`
+    - Function package: Click on **Upload** and browse to `<project-dir>/lambda-grpc/target/scala-2.12/lambdaGrpc-assembly-0.1.0-SNAPSHOT.jar`
+
+The lambda function is now deployed on AWS. 
+
+### Exposing the API for accessing lambda functions using AWS API Gateway
+
+1. Ensure that AWS CLI is installed and configured on your system. Follow this [guide](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-install.html) to know how to do so
+2. Ensure that the user configured with your AWS CLI is having the proper IAM roles and permissions configured for modifying AWS API Gateway
+3. Log in to your [AWS Console](https://aws.amazon.com)
+4. From **Services**, search for **API Gateway** and select it
+5. Click on **Create API**
+6. In the next screen, choose the following options and click on **Create API**:
+    - Protocol: `REST`
+    - API Name: `Calculator`
+7. From the **Actions** dropdown, select **Create Resource**, set **Resource Name** and **Resource Path** to `calculator`, and click **Create Resource** button
+8. From the **Actions** dropdown, select **Create Resource**, set **Resource Name** and **Resource Path** to `grpc`, and click **Create Resource** button
+9. From the **Actions** dropdown, select **Create Method**, set the method as `POST`, modify the following options, and click **Save**
+    - Integration Type: `Lambda Function`
+    - Use Lambda Proxy Integration: Checked
+    - Lambda Function: `CalculatorGrpc` 
+10. From the **Actions** dropdown, select **Create Resource**, set **Resource Name** and **Resource Path** to `rest`, and click **Create Resource** button
+11. From the **Actions** dropdown, select **Create Method**, set the method as `POST`, modify the following options, and click **Save**
+    - Integration Type: `Lambda Function`
+    - Use Lambda Proxy Integration: Leave unchecked
+    - Lambda Function: `CalculatorRest`
+12. From the left sidebar, under the API `Calculator`, go to **Settings**
+13. Under the **Binary Media Types** section, add `application/grpc+proto` as a binary media type and click **Save Changes**
+14. Go back to **Resources** from the left sidebar and select `/grpc`
+15. Make a note of the IDs displayed in the *grey* breadcrumbs bar - The one within parentheses beside **Calculator** is the **REST API ID** and the one within parentheses beside **/calculator/grpc** is the **Resource ID**
+16. Open command prompt (if on Windows) or terminal (if on Mac/Linux)
+17. Issue the following command to tell API Gateway that it should convert the base-64 encoded response body of the `CalculatorGrpc` lambda function to binary before forwarding the response to the client. Replace `<rest-api-id>` and `<resource-id>` with the IDs noted in step 15 
+
+    ```
+    aws apigateway update-integration-response --rest-api-id <rest-api-id> --resource-id <resource-id> --http-method POST --status-code 200 --patch-operations '[{"op" : "replace", "path" : "/contentHandling", "value" : "CONVERT_TO_BINARY"}]'
+    ```
+
+18. In your browser, from the **Actions** dropdown, select **Deploy API**
+19. Choose **Deployment stage** as `[New Stage]` and **Stage Name** as `prod` and click on **Deploy** button
+20. Your API is now deployed at the URL mentioned in **prod Stage Editor** page. 
+
+You can now invoke the APIs using the `Calculator` client program like so:
+
+**For gRPC client**
+
+```
+sbt "client/run grpc <your-api-gateway-url>/calculator/grpc" 
+```
+
+**For REST client**
+
+```
+sbt "client/run rest <your-api-gateway-url>/calculator/rest" 
+```
