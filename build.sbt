@@ -78,7 +78,7 @@ lazy val client = (project in file("client"))
       scalatest,
     ) ++ logback
   )
-  .dependsOn(service)
+  .dependsOn(protobuflib)
 
 // Project for AWS Lambda Function that uses JSON as the data-interchange format
 lazy val lambdaRest = (project in file("lambda-rest"))
